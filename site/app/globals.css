@@ -452,8 +452,8 @@ p { text-wrap: pretty; }
   .site-header nav.is-open { display: grid; }
   .site-header nav a { padding: 12px; color: var(--navy-800); }
   .site-header nav a::after { display: none; }
-  .menu-toggle { display: block; margin-left: auto; }
-  .header-contact { margin-left: 0; }
+  .header-contact { margin-left: auto; }
+  .menu-toggle { display: block; margin-left: 0; }
   .hero-grid { grid-template-columns: minmax(0, 1fr) minmax(350px, .88fr); }
   .handset-visual { width: 100%; max-width: 540px; }
   .pillar-card { grid-template-columns: 58px 1fr; padding-right: 18px; }

@@ -80,6 +80,7 @@ test("links the header contact to SpitUp and ships motion-safe mobile bento stac
   ]);
 
   assert.match(html, /class="header-contact" href="tel:\+3271182473"/);
+  assert.match(styles, /@media \(max-width: 1040px\)[\s\S]*?\.header-contact \{ margin-left: auto; \}[\s\S]*?\.menu-toggle \{ display: block; margin-left: 0; \}/);
   assert.match(source, /\(max-width: 560px\) and \(prefers-reduced-motion: no-preference\)/);
   assert.match(source, /classList\.add\("is-bento-stack"\)/);
   assert.equal(
