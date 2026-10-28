@@ -66,7 +66,7 @@ test("ships the SpitUp and Banana Navy ownership footer", async () => {
   const html = await readFile(new URL("index.html", outputRoot), "utf8");
 
   assert.match(html, /Créé pour/);
-  assert.match(html, /L’intégralité du stack technique/);
+  assert.match(html, /Une collaboration réunissant expertise télécom et intelligence conversationnelle/);
   assert.match(html, /info@spitup\.be/);
   assert.match(html, /marc@banana-navy\.com/);
   await access(new URL("assets/brand/spitup-logo.png", outputRoot));

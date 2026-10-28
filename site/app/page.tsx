@@ -888,9 +888,9 @@ export default function Home() {
         <div className="shell strike-card" data-bento>
           <div className="strike-copy">
             <p className="eyebrow">Socle technologique Banana Navy</p>
-            <h2>Des patterns d’ingénierie inspirés par STRIKE‑IT</h2>
-            <p>Le socle Banana Navy reprend des principes travaillés dans le cadre de STRIKE‑IT : résilience, protection des données, reprise humaine et déploiement progressif.</p>
-            <p className="strike-caveat">Cette référence décrit l’approche Banana Navy. Elle ne constitue ni une certification du CHRSM, ni une intégration déjà validée : chaque composant, hébergement et niveau d’accès doit être cadré avant un pilote.</p>
+            <h2>Du prototype à une capacité opérationnelle</h2>
+            <p>Indépendamment de ce prototype CHRSM, Voice Bot Navy — développé par Banana Navy avec Sirris — a été sélectionné dans le cadre de STRIKE‑IT 2026, programme de la Défense belge porté par l’IRSD et la Force cyber au sein de la Cyber Defence Factory. Le projet progresse d’un démonstrateur vers une capacité opérationnelle de communication de crise résiliente.</p>
+            <p className="strike-caveat">Sa trajectoire vise une solution souveraine. Pour le CHRSM, l’hébergement dans l’Union européenne, la résidence des données, les composants et les niveaux d’accès devront être cadrés et validés avant tout pilote.</p>
           </div>
           <div className="strike-logos" aria-label="Partenaires et programme de référence">
             <img className="banana-logo" src={`${A}/brand/banana-navy-logo.png`} alt="Banana Navy" />
@@ -954,7 +954,7 @@ export default function Home() {
                 <span className="footer-logo-separator" aria-hidden="true">×</span>
                 <a className="footer-logo-tile" href="https://www.banana-navy.ai" target="_blank" rel="noreferrer" aria-label="Visiter le site de Banana Navy"><img className="banana-footer-mark" src={`${A}/brand/banana-navy-logo-trim.png`} alt="Banana Navy" decoding="async" /></a>
               </div>
-              <p>L’intégralité du stack technique — interface, voicebot, RAG, BeSt, flux de rappel, sécurité et intégrations — est conçue et réalisée par Banana Navy pour SpitUp.</p>
+              <p>Une collaboration réunissant expertise télécom et intelligence conversationnelle, au service d’un accueil téléphonique plus efficace, fiable et évolutif.</p>
             </section>
 
             <section className="footer-contact-column" data-bento aria-labelledby="spitup-contact-title">
