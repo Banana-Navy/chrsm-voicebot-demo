@@ -82,6 +82,11 @@ test("links the header contact to SpitUp and ships motion-safe mobile bento stac
   assert.match(html, /class="header-contact" href="tel:\+3271182473"/);
   assert.match(source, /\(max-width: 560px\) and \(prefers-reduced-motion: no-preference\)/);
   assert.match(source, /classList\.add\("is-bento-stack"\)/);
+  assert.equal(
+    (source.match(/className="footer-contact-column" data-bento/g) ?? []).length,
+    2,
+    "Both footer contact cards must participate in the mobile bento stack.",
+  );
   assert.match(styles, /\.is-bento-stack-parent/);
   assert.match(styles, /position:\s*sticky/);
   assert.match(styles, /opacity:\s*1\s*!important/);

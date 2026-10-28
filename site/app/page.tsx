@@ -957,7 +957,7 @@ export default function Home() {
               <p>L’intégralité du stack technique — interface, voicebot, RAG, BeSt, flux de rappel, sécurité et intégrations — est conçue et réalisée par Banana Navy pour SpitUp.</p>
             </section>
 
-            <section className="footer-contact-column" aria-labelledby="spitup-contact-title">
+            <section className="footer-contact-column" data-bento aria-labelledby="spitup-contact-title">
               <p className="footer-kicker">Contact opérationnel</p>
               <h3 id="spitup-contact-title">SpitUp</h3>
               <address>
@@ -968,7 +968,7 @@ export default function Home() {
               </address>
             </section>
 
-            <section className="footer-contact-column" aria-labelledby="banana-contact-title">
+            <section className="footer-contact-column" data-bento aria-labelledby="banana-contact-title">
               <p className="footer-kicker">Stack &amp; intégrations</p>
               <h3 id="banana-contact-title">Banana Navy</h3>
               <address>
