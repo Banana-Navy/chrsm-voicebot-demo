@@ -4,8 +4,27 @@ import { WebSocketConnection } from "../site/node_modules/@elevenlabs/client/dis
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const agentId = process.env.ELEVENLABS_AGENT_ID;
-if (!apiKey || !agentId) {
-  throw new Error("ELEVENLABS_API_KEY et ELEVENLABS_AGENT_ID sont requis.");
+const signedUrlOverride = process.env.ELEVENLABS_SIGNED_URL;
+if ((!apiKey || !agentId) && !signedUrlOverride) {
+  throw new Error(
+    "ELEVENLABS_API_KEY + ELEVENLABS_AGENT_ID, ou ELEVENLABS_SIGNED_URL, sont requis.",
+  );
+}
+
+function acknowledgementIssues(text, expectedTopic) {
+  const issues = [];
+  if (/\bje\s+(?:v[ée]rifie|regarde|cherche)\b|\bun instant\b|\bpatientez\b/iu.test(text)) {
+    issues.push("Formule d’attente générique détectée avant la recherche.");
+  }
+  const firstSentence = (text.split(/[.!?]/u)[0] ?? "").trim();
+  const words = firstSentence.match(/[\p{L}\p{N}’'-]+/gu) ?? [];
+  if (words.length < 2 || words.length > 3) {
+    issues.push(`La micro-reprise doit contenir 2 ou 3 mots : « ${firstSentence} ».`);
+  }
+  if (!expectedTopic.test(firstSentence)) {
+    issues.push(`La micro-reprise ne reflète pas le sujet demandé : « ${firstSentence} ».`);
+  }
+  return issues;
 }
 
 const scenarios = {
@@ -15,9 +34,28 @@ const scenarios = {
     validate(text) {
       const hasSeven = /(?:7\s*h|sept heures?)/iu.test(text);
       const hasTwentyThirty = /(?:20\s*h\s*30|vingt heures? trente)/iu.test(text);
-      return hasSeven && hasTwentyThirty
-        ? []
-        : ["La réponse ne contient pas les horaires contrôlés 7 h et 20 h 30."];
+      const issues = acknowledgementIssues(text, /porte|ouverture|horaire/iu);
+      if (!hasSeven || !hasTwentyThirty) {
+        issues.push("La réponse ne contient pas les horaires contrôlés 7 h et 20 h 30.");
+      }
+      return issues;
+    },
+  },
+  service_coverage: {
+    message: "Quels sont les horaires du take-away et du restaurant au site Meuse ?",
+    expectedTool: "CHRSM_search_public_knowledge",
+    validate(text) {
+      const hasTakeAwayHours = /(?:8\s*h|huit heures?).*(?:17\s*h|dix-sept heures?)/iu.test(text);
+      const hasRestaurantHours = /(?:11\s*h\s*30|onze heures? trente).*(?:14\s*h\s*30|quatorze heures? trente)/iu.test(text);
+      const redirectsAway = /(?:consultez?|rendez-vous sur|site officiel|page officielle)/iu.test(text);
+      const issues = acknowledgementIssues(text, /take-away|restaurant|restauration|horaire/iu);
+      if (!hasTakeAwayHours || !hasRestaurantHours) {
+        issues.push("La réponse ne contient pas les horaires officiels du take-away et des repas chauds.");
+      }
+      if (redirectsAway) {
+        issues.push("La réponse renvoie encore vers une page externe au lieu de répondre depuis le RAG.");
+      }
+      return issues;
     },
   },
   appointment: {
@@ -58,6 +96,7 @@ const voiceId = "HDc7042zGcc1SdpT2m1U";
 const wait = (milliseconds) => new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
 
 async function signedUrl() {
+  if (signedUrlOverride) return signedUrlOverride;
   const response = await fetch(
     `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(agentId)}`,
     { headers: { "xi-api-key": apiKey } },
@@ -200,8 +239,8 @@ async function run(name, scenario) {
   });
 
   await finished;
-  const details = await conversationDetails(connection.conversationId);
-  const transcript = details.transcript ?? [];
+  const details = apiKey ? await conversationDetails(connection.conversationId) : null;
+  const transcript = details?.transcript ?? [];
   const questionIndex = transcript.findLastIndex((turn) =>
     turn.role === "user" && turn.message?.trim() === scenario.message.trim()
   );
@@ -215,16 +254,18 @@ async function run(name, scenario) {
   const calledTools = transcript.flatMap((turn) =>
     (turn.tool_calls ?? []).map((call) => call.tool_name)
   );
-  const voiceIds = details.metadata?.charging?.tts_usage?.per_voice_usage
+  const voiceIds = details?.metadata?.charging?.tts_usage?.per_voice_usage
     ?.map((usage) => usage.voice_id) ?? [];
   const issues = [...fluencyIssues(finalText), ...scenario.validate(finalText)];
-  if (scenario.expectedTool && !calledTools.includes(scenario.expectedTool)) {
+  if (details && scenario.expectedTool && !calledTools.includes(scenario.expectedTool)) {
     issues.push(`Outil attendu absent : ${scenario.expectedTool}.`);
   }
   for (const tool of scenario.forbiddenTools ?? []) {
     if (calledTools.includes(tool)) issues.push(`Outil interdit appelé : ${tool}.`);
   }
-  if (!voiceIds.includes(voiceId)) issues.push("La voix belge configurée n’a pas été utilisée.");
+  if (details && !voiceIds.includes(voiceId)) {
+    issues.push("La voix belge configurée n’a pas été utilisée.");
+  }
   const rawAudio = Buffer.concat(audioChunks.map((chunk) => chunk.bytes));
   const outputFormatName = formatName(connection.outputFormat);
   const audioPath = resolve(directory, `response-${outputFormatName}.raw`);
@@ -233,11 +274,14 @@ async function run(name, scenario) {
   const result = {
     scenario: name,
     conversation_id: connection.conversationId,
+    server_transcript_verified: Boolean(details),
     response: finalText,
     called_tools: calledTools,
     voice_ids: voiceIds,
     output_format: outputFormatName,
     first_audio_latency_ms: sentAt && firstAudioAt ? firstAudioAt - sentAt : null,
+    latency_target_ms: 850,
+    latency_target_met: sentAt && firstAudioAt ? firstAudioAt - sentAt <= 850 : false,
     audio_duration_ms: audioDurationMs(connection.outputFormat, rawAudio.length),
     audio_chunk_count: audioChunks.length,
     max_network_chunk_gap_ms: networkGaps.length ? Math.max(...networkGaps) : 0,
