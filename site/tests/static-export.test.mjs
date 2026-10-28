@@ -71,3 +71,18 @@ test("ships the SpitUp and Banana Navy ownership footer", async () => {
   assert.match(html, /marc@banana-navy\.com/);
   await access(new URL("assets/brand/spitup-logo.png", outputRoot));
 });
+
+test("links the header contact to SpitUp and ships motion-safe mobile bento stacks", async () => {
+  const [html, source, styles] = await Promise.all([
+    readFile(new URL("index.html", outputRoot), "utf8"),
+    readFile(new URL("app/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/globals.css", projectRoot), "utf8"),
+  ]);
+
+  assert.match(html, /class="header-contact" href="tel:\+3271182473"/);
+  assert.match(source, /\(max-width: 560px\) and \(prefers-reduced-motion: no-preference\)/);
+  assert.match(source, /classList\.add\("is-bento-stack"\)/);
+  assert.match(styles, /\.is-bento-stack-parent/);
+  assert.match(styles, /position:\s*sticky/);
+  assert.match(styles, /opacity:\s*1\s*!important/);
+});

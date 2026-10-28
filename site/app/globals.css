@@ -385,6 +385,50 @@ p { text-wrap: pretty; }
   [data-bento].is-bento-observed { opacity: 1 !important; transform: translate3d(0, 18px, 0) scale(.99); transition-delay: calc(var(--bento-order, 0) * 45ms); }
   [data-bento].is-bento-observed.is-bento-visible { transform: translate3d(0, 0, 0) scale(1); }
 }
+
+@media (max-width: 560px) and (prefers-reduced-motion: no-preference) {
+  .pathways-panel,
+  .wayfinding-section,
+  .site-footer,
+  .footer-panel { overflow: visible; }
+
+  :is(
+    .is-bento-stack-parent,
+    .demo-layout,
+    .info-grid,
+    .pathway-cards,
+    .wayfinding-layout,
+    .flow-grid,
+    .safety-grid,
+    .timeline,
+    .footer-scope ul
+  ) {
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  :is(
+    .is-bento-stack-parent,
+    .demo-layout,
+    .info-grid,
+    .pathway-cards,
+    .wayfinding-layout,
+    .flow-grid,
+    .safety-grid,
+    .timeline,
+    .footer-scope ul
+  ) > [data-bento] {
+    position: sticky;
+    z-index: var(--bento-stack-z, 10);
+    top: var(--bento-stack-top, 76px);
+    align-self: start;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: box-shadow .22s ease, border-color .22s ease;
+    box-shadow: 0 16px 30px rgba(3, 43, 68, .15);
+  }
+}
 .partner-band { display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); gap: 58px; margin-top: 48px; border-top: 1px solid rgba(22,42,54,.14); padding-top: 36px; }
 .partner-band .footer-kicker { color: var(--muted); }
 .partner-logos { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; margin-top: 22px; }

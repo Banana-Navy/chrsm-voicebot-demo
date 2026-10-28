@@ -513,7 +513,9 @@ export default function Home() {
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)");
     const coarsePointer = window.matchMedia("(hover: none), (pointer: coarse)");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobileStack = window.matchMedia("(max-width: 560px) and (prefers-reduced-motion: no-preference)");
     const cardCleanups: Array<() => void> = [];
+    const stackedParents = new Set<HTMLElement>();
     let activeCard: HTMLElement | null = null;
 
     const resetCard = (card: HTMLElement) => {
@@ -575,6 +577,49 @@ export default function Home() {
       });
     }
 
+    const clearMobileStacks = () => {
+      stackedParents.forEach((parent) => parent.classList.remove("is-bento-stack-parent"));
+      stackedParents.clear();
+      cards.forEach((card) => {
+        card.classList.remove("is-bento-stack");
+        card.style.removeProperty("--bento-stack-top");
+        card.style.removeProperty("--bento-stack-z");
+      });
+    };
+
+    const syncMobileStacks = () => {
+      clearMobileStacks();
+      if (!mobileStack.matches) return;
+
+      const groupedParents = new Set<HTMLElement>();
+      cards.forEach((card) => {
+        const parent = card.parentElement;
+        if (!parent || groupedParents.has(parent)) return;
+
+        const siblingCards = Array.from(parent.children).filter(
+          (child): child is HTMLElement => child instanceof HTMLElement && child.matches("[data-bento]"),
+        );
+        if (siblingCards.length < 2) return;
+
+        groupedParents.add(parent);
+        stackedParents.add(parent);
+        parent.classList.add("is-bento-stack-parent");
+        siblingCards.forEach((sibling, index) => {
+          const visibleOffset = Math.min(index, 6) * 6;
+          sibling.classList.add("is-bento-stack");
+          sibling.style.setProperty("--bento-stack-top", `${76 + visibleOffset}px`);
+          sibling.style.setProperty("--bento-stack-z", String(10 + index));
+        });
+      });
+    };
+
+    syncMobileStacks();
+    mobileStack.addEventListener("change", syncMobileStacks);
+    cardCleanups.push(() => {
+      mobileStack.removeEventListener("change", syncMobileStacks);
+      clearMobileStacks();
+    });
+
     let observer: IntersectionObserver | null = null;
     if (coarsePointer.matches && !reducedMotion.matches && "IntersectionObserver" in window) {
       cards.forEach((card, index) => {
@@ -624,7 +669,7 @@ export default function Home() {
             <a href="#securite" onClick={() => setMenuOpen(false)}>Sécurité</a>
             <a href="#deploiement" onClick={() => setMenuOpen(false)}>Déploiement</a>
           </nav>
-          <a className="header-contact" href="#rappel">Contact</a>
+          <a className="header-contact" href="tel:+3271182473">Contact</a>
           <button className="menu-toggle" type="button" aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen(!menuOpen)}>
             <span /><span /><span />
           </button>
