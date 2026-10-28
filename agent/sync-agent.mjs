@@ -75,6 +75,7 @@ function validateConfig(config) {
     typeof config.agent?.name !== "string" ||
     typeof config.agent?.prompt_file !== "string" ||
     typeof config.agent?.first_message !== "string" ||
+    config.agent?.disable_first_message_interruptions !== true ||
     config.agent?.language !== "fr" ||
     config.agent?.temperature !== 0 ||
     !Number.isInteger(config.agent?.max_tokens)
@@ -90,13 +91,26 @@ function validateConfig(config) {
   }
   if (
     config.platform?.private_agent !== true ||
-    config.platform?.record_voice !== false ||
-    config.platform?.retention_days !== 0 ||
-    config.platform?.delete_audio !== true ||
+    config.platform?.record_voice !== true ||
+    !Number.isInteger(config.platform?.retention_days) ||
+    config.platform.retention_days < 1 ||
+    config.platform.retention_days > 90 ||
+    config.platform?.delete_audio !== false ||
     config.platform?.delete_transcript_and_pii !== true ||
     config.platform?.user_memory !== false
   ) {
-    throw new Error("La configuration de confidentialité stricte est obligatoire.");
+    throw new Error("La configuration d’enregistrement et de confidentialité est invalide.");
+  }
+  if (
+    config.turn?.turn_model !== "turn_v3" ||
+    !["normal", "patient", "eager"].includes(config.turn?.turn_eagerness) ||
+    !Array.isArray(config.turn?.interruption_ignore_terms) ||
+    config.turn.interruption_ignore_terms.length === 0 ||
+    !Array.isArray(config.turn?.interruption_ignore_term_languages) ||
+    config.turn?.merge_with_default_ignore_terms !== true ||
+    config.turn?.transcribe_on_disabled_interruptions !== false
+  ) {
+    throw new Error("La configuration de prise de tour et d’interruption est invalide.");
   }
 
   const auth = config.tool_auth;
@@ -227,7 +241,7 @@ function buildConversation(base, config, prompt, toolIds) {
     ...currentAgent,
     first_message: config.agent.first_message,
     language: config.agent.language,
-    disable_first_message_interruptions: false,
+    disable_first_message_interruptions: config.agent.disable_first_message_interruptions,
     prompt: currentPrompt,
   };
   conversation.language_presets = {};
@@ -243,6 +257,10 @@ function buildConversation(base, config, prompt, toolIds) {
     turn_eagerness: config.turn.turn_eagerness,
     speculative_turn: config.turn.speculative_turn,
     turn_timeout: config.turn.turn_timeout,
+    interruption_ignore_terms: config.turn.interruption_ignore_terms,
+    interruption_ignore_term_languages: config.turn.interruption_ignore_term_languages,
+    merge_with_default_ignore_terms: config.turn.merge_with_default_ignore_terms,
+    transcribe_on_disabled_interruptions: config.turn.transcribe_on_disabled_interruptions,
     soft_timeout_config: {
       ...(isObject(conversation.turn?.soft_timeout_config)
         ? conversation.turn.soft_timeout_config
@@ -268,6 +286,13 @@ function buildConversation(base, config, prompt, toolIds) {
   conversation.conversation = {
     ...(isObject(conversation.conversation) ? conversation.conversation : {}),
     max_duration_seconds: config.agent.max_duration_seconds,
+    client_events: Array.from(new Set([
+      ...(Array.isArray(conversation.conversation?.client_events)
+        ? conversation.conversation.client_events
+        : []),
+      "audio",
+      "interruption",
+    ])),
     file_input: { enabled: false },
   };
   conversation.vad = {
@@ -621,9 +646,12 @@ Options:
     toolIds.some((id) => !deployedToolIds.includes(id)) ||
     deployed?.conversation_config?.agent?.prompt?.prompt !== prompt ||
     deployed?.conversation_config?.tts?.voice_id !== config.voice.voice_id ||
-    deployed?.platform_settings?.privacy?.record_voice !== false ||
-    deployed?.platform_settings?.privacy?.retention_days !== 0 ||
-    deployed?.platform_settings?.privacy?.delete_audio !== true ||
+    deployed?.conversation_config?.agent?.disable_first_message_interruptions !== true ||
+    !deployed?.conversation_config?.conversation?.client_events?.includes("interruption") ||
+    deployed?.conversation_config?.turn?.merge_with_default_ignore_terms !== true ||
+    deployed?.platform_settings?.privacy?.record_voice !== config.platform.record_voice ||
+    deployed?.platform_settings?.privacy?.retention_days !== config.platform.retention_days ||
+    deployed?.platform_settings?.privacy?.delete_audio !== config.platform.delete_audio ||
     deployed?.platform_settings?.privacy?.delete_transcript_and_pii !== true ||
     deployed?.platform_settings?.auth?.enable_auth !== true
   ) {
@@ -641,11 +669,11 @@ Options:
         voice: { id: config.voice.voice_id, name: config.voice.name },
         private_agent: true,
         privacy: {
-          record_voice: false,
-          retention_days: 0,
-          delete_audio: true,
-          delete_transcript_and_pii: true,
-          user_memory: false,
+          record_voice: config.platform.record_voice,
+          retention_days: config.platform.retention_days,
+          delete_audio: config.platform.delete_audio,
+          delete_transcript_and_pii: config.platform.delete_transcript_and_pii,
+          user_memory: config.platform.user_memory,
         },
         tools: remoteTools.map((tool) => ({
           id: tool.id,

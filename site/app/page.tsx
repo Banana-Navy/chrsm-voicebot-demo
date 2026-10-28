@@ -211,8 +211,14 @@ function VoiceConsoleControls() {
       setHasError(false);
       setMessage("Autorisez le microphone pour commencer…");
       const permissionStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: { ideal: 1 },
+        },
       });
+      const inputDeviceId = permissionStream.getAudioTracks()[0]?.getSettings().deviceId;
       permissionStream.getTracks().forEach((track) => track.stop());
 
       setMessage("Connexion sécurisée au voicebot…");
@@ -241,6 +247,7 @@ function VoiceConsoleControls() {
       conversation.startSession({
         conversationToken: token,
         connectionType: "webrtc",
+        ...(inputDeviceId ? { inputDeviceId } : {}),
       });
     } catch (error) {
       setStarting(false);
@@ -297,7 +304,7 @@ function VoiceConsoleControls() {
 
       <label className="consent-line">
         <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-        <span>J’autorise l’accès au microphone pour cette conversation de démonstration. Je ne communique aucune donnée médicale sensible.</span>
+        <span>J’autorise l’accès au microphone et l’enregistrement de cette conversation de démonstration dans ElevenLabs pendant 30 jours. Je ne communique aucune donnée médicale sensible.</span>
       </label>
 
       <div className="voice-actions">
@@ -314,7 +321,7 @@ function VoiceConsoleControls() {
         )}
       </div>
 
-      <p className="voice-note">Prototype non officiel · aucune prise de rendez-vous ferme · danger vital : 112</p>
+      <p className="voice-note">Prototype non officiel · audio conservé 30 jours · aucune prise de rendez-vous ferme · danger vital : 112</p>
     </div>
   );
 }

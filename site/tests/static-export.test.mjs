@@ -44,6 +44,10 @@ test("keeps only the ephemeral voice-session contract in the public client", asy
   assert.match(source, /conversationToken/);
   assert.match(source, /conversation_token/);
   assert.match(source, /connectionType:\s*"webrtc"/);
+  assert.match(source, /inputDeviceId/);
+  assert.match(source, /noiseSuppression:\s*true/);
+  assert.match(source, /autoGainControl:\s*true/);
+  assert.match(source, /enregistrement de cette conversation de démonstration dans ElevenLabs pendant 30 jours/);
   assert.doesNotMatch(source, /NEXT_PUBLIC_CHRSM_CALLBACK_URL|NEXT_PUBLIC_CHRSM_ADDRESS_URL/);
   assert.doesNotMatch(source, /CallbackRequestForm|callback-request-form/);
 });

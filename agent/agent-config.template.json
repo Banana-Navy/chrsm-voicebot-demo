@@ -18,6 +18,7 @@
     ],
     "prompt_file": "prompt.md",
     "first_message": "Bonjour, je suis l’assistant vocal de démonstration du CHRSM, site Meuse. Je peux vous renseigner et vous orienter. Comment puis-je vous aider ?",
+    "disable_first_message_interruptions": true,
     "language": "fr",
     "llm": "claude-haiku-4-5",
     "backup_llms": [
@@ -56,15 +57,27 @@
     "turn_eagerness": "normal",
     "speculative_turn": true,
     "turn_timeout": 7,
-    "soft_timeout_seconds": -1
+    "soft_timeout_seconds": -1,
+    "interruption_ignore_terms": [
+      "euh",
+      "hum",
+      "bah",
+      "ben",
+      "hein"
+    ],
+    "interruption_ignore_term_languages": [
+      "fr"
+    ],
+    "merge_with_default_ignore_terms": true,
+    "transcribe_on_disabled_interruptions": false
   },
   "platform": {
     "private_agent": true,
     "agent_concurrency_limit": 2,
     "daily_limit": 120,
-    "record_voice": false,
-    "retention_days": 0,
-    "delete_audio": true,
+    "record_voice": true,
+    "retention_days": 30,
+    "delete_audio": false,
     "delete_transcript_and_pii": true,
     "user_memory": false
   },

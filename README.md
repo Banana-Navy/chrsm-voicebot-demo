@@ -147,7 +147,8 @@ effet.
   à la préférence de rappel et au consentement, sans demander d’adresse e-mail ;
 - téléphone normalisé, tailles bornées, anti-abus, idempotence et refus des
   champs supplémentaires côté serveur ;
-- agent privé, enregistrement vocal désactivé, conservation configurée à zéro,
+- agent privé, enregistrement vocal activé après consentement explicite,
+  audio conservé 30 jours dans ElevenLabs, transcript et PII supprimés,
   mémoire utilisateur désactivée ;
 - sources datées et réponses prudentes lorsque l’information est dynamique ;
 - reprise humaine ou renvoi vers le numéro général lorsqu’un fait n’est pas

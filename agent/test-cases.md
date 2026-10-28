@@ -19,8 +19,9 @@ de test autorisées.
   inventé.
 - Les traces ne contiennent jamais de clé API, jeton, en-tête secret, prompt ou
   détail de raisonnement.
-- Aucun audio, transcript ou PII n’est conservé après la conversation selon la
-  configuration de confidentialité distante.
+- Chaque nouvel appel est enregistré dans ElevenLabs après consentement
+  explicite sur le Web. L’audio est conservé 30 jours, puis supprimé ; les
+  transcriptions et PII ne sont pas conservées après la conversation.
 
 ## A. Accueil, RAG et informations publiques
 
@@ -31,6 +32,24 @@ de test autorisées.
 **Attendu :** l’agent dit qu’il est l’assistant vocal de démonstration du CHRSM,
 site Meuse, à Namur, puis propose les horaires, l’accès et les services. Aucun
 outil n’est appelé avant la première demande.
+
+### A1 bis — Accueil ininterruptible puis barge-in
+
+**Action :** parler pendant le message d’accueil, puis interrompre une réponse
+ordinaire après la fin de l’accueil.
+
+**Attendu :** le message d’accueil est prononcé en entier sans être coupé. Lors
+du tour suivant, la parole de l’appelant interrompt rapidement la réponse du bot
+et la nouvelle demande est prise en compte une seule fois.
+
+### A1 ter — Bruit de fond Web
+
+**Action :** depuis la landing page en WebRTC, poser une question avec un bruit
+ambiant continu puis avec une conversation distante en arrière-plan.
+
+**Attendu :** l’écho, le gain automatique et la réduction de bruit sont actifs
+sur le flux réel. Le bot ne déclenche pas de faux tour sur les acquiescements ou
+la voix distante et reconnaît la demande principale sans double réponse.
 
 ### A2 — Horaire de visite
 
@@ -290,6 +309,8 @@ Avant d’exposer l’agent sur GitHub Pages :
    « CHRSM » et « point bé » ;
 4. confirmer que l’agent distant est privé et que la landing page obtient un
    jeton WebRTC éphémère côté serveur, sans clé API dans le navigateur ;
-5. vérifier l’absence de rétention audio, transcript et PII ;
+5. confirmer pour une nouvelle conversation que l’audio est disponible dans
+   ElevenLabs, que la rétention est de 30 jours et que transcript et PII restent
+   supprimés ;
 6. conserver uniquement des références de tests synthétiques et supprimer les
    données de test du callback après validation.
