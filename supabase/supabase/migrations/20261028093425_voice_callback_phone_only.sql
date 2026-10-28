@@ -1,0 +1,9 @@
+-- Align the public demo knowledge with the voice callback policy:
+-- phone is the only callback contact channel collected by the voicebot.
+
+update chrsm_demo.knowledge_chunks
+set
+  retrieval_text_fr = 'Protection des données et limites de la démonstration. Le voicebot de démonstration est un outil d’information et d’orientation, pas un dossier médical. Il ne demande pas de diagnostic, de symptômes détaillés, de numéro de registre national, de date de naissance ni de données cliniques. Pour un rappel vocal, il limite la collecte au nom, au numéro de téléphone, au service recherché, à une préférence de rappel et au consentement. Il ne demande pas d’adresse e-mail. Le DPO du CHRSM est joignable à dpo@chrsm.be pour les questions officielles sur les traitements du CHRSM.',
+  answer_fr = 'Le voicebot de démonstration est un outil d’information et d’orientation, pas un dossier médical. Il ne demande pas de diagnostic, de symptômes détaillés, de numéro de registre national, de date de naissance ni de données cliniques. Pour un rappel vocal, il limite la collecte au nom, au numéro de téléphone, au service recherché, à une préférence de rappel et au consentement. Il ne demande pas d’adresse e-mail. Le DPO du CHRSM est joignable à dpo@chrsm.be pour les questions officielles sur les traitements du CHRSM.',
+  facts_fr = 'Le voicebot de démonstration est un outil d’information et d’orientation, pas un dossier médical. Il ne demande pas de diagnostic, de symptômes détaillés, de numéro de registre national, de date de naissance ni de données cliniques. Pour un rappel vocal, il limite la collecte au nom, au numéro de téléphone, au service recherché, à une préférence de rappel et au consentement. Il ne demande pas d’adresse e-mail. Le DPO du CHRSM est joignable à dpo@chrsm.be pour les questions officielles sur les traitements du CHRSM.'
+where chunk_key = 'data-protection-v1';

@@ -1,0 +1,106 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAGES: "true"
+      NEXT_PUBLIC_CHRSM_VOICE_SESSION_URL: https://example.test/functions/v1/chrsm-conversation-token
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: site
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: site
+        run: npm run lint
+
+      - name: Build GitHub Pages export
+        working-directory: site
+        run: npm run build
+
+      - name: Test exported site
+        working-directory: site
+        run: npm test
+
+      - name: Typecheck Supabase Edge Functions
+        run: >-
+          npx --yes deno@2.1.4 check --no-lock
+          --config supabase/supabase/functions/deno.json
+          supabase/supabase/functions/chrsm-search-knowledge/index.ts
+          supabase/supabase/functions/chrsm-resolve-address/index.ts
+          supabase/supabase/functions/chrsm-callback/index.ts
+          supabase/supabase/functions/chrsm-conversation-token/index.ts
+
+      - name: Validate versioned JSON contracts
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+
+          const knowledge = JSON.parse(
+            await readFile("knowledge/official-source-registry.json", "utf8"),
+          );
+          if (!Array.isArray(knowledge.entries) || knowledge.entries.length === 0) {
+            throw new Error("The official source registry has no entries.");
+          }
+          for (const entry of knowledge.entries) {
+            if (!entry.slug || !entry.content_fr || !entry.embedding_input_en) {
+              throw new Error(`Incomplete knowledge entry: ${entry.slug ?? "unknown"}`);
+            }
+            const source = new URL(entry.source_url);
+            if (source.protocol !== "https:") {
+              throw new Error(`Non-HTTPS source: ${entry.slug}`);
+            }
+          }
+
+          const agent = JSON.parse(
+            await readFile("agent/agent-config.template.json", "utf8"),
+          );
+          if (agent.schema_version !== 1 || agent.platform?.private_agent !== true) {
+            throw new Error("The ElevenLabs agent contract is not private schema v1.");
+          }
+          if (!Array.isArray(agent.tools) || agent.tools.length !== 3) {
+            throw new Error("The ElevenLabs agent contract must expose exactly three tools.");
+          }
+          NODE
+
+      - name: Validate ElevenLabs dry-run
+        run: |
+          node agent/sync-agent.mjs > "${RUNNER_TEMP}/chrsm-agent-plan.json"
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+
+          const plan = JSON.parse(
+            await readFile(`${process.env.RUNNER_TEMP}/chrsm-agent-plan.json`, "utf8"),
+          );
+          if (plan.remote_calls !== false) {
+            throw new Error("The CI dry-run attempted to authorize remote calls.");
+          }
+          if (plan.private_agent !== true || plan.tools?.length !== 3) {
+            throw new Error("The locally validated ElevenLabs plan is incomplete.");
+          }
+          NODE

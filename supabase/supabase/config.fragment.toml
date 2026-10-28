@@ -1,0 +1,14 @@
+# Merge into the final supabase/config.toml after review.
+# Each function implements its own authentication contract.
+
+[functions.chrsm-conversation-token]
+verify_jwt = false
+
+[functions.chrsm-search-knowledge]
+verify_jwt = false
+
+[functions.chrsm-resolve-address]
+verify_jwt = false
+
+[functions.chrsm-callback]
+verify_jwt = false

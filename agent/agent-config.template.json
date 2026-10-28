@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "deployment": {
+    "api_origin": "https://api.elevenlabs.io",
+    "target_agent_id": null,
+    "reference_agent_id": null,
+    "mode": "create_when_target_is_null_update_otherwise"
+  },
+  "agent": {
+    "name": "CHRSM Meuse — Accueil première ligne — DÉMO",
+    "tags": [
+      "chrsm",
+      "site-meuse",
+      "namur",
+      "demo",
+      "fr-be",
+      "no-medical-advice"
+    ],
+    "prompt_file": "prompt.md",
+    "first_message": "Bonjour, je suis l’assistant vocal de démonstration du CHRSM, site Meuse. Je peux vous renseigner et vous orienter. Comment puis-je vous aider ?",
+    "language": "fr",
+    "llm": "claude-haiku-4-5",
+    "backup_llms": [
+      "claude-sonnet-4-5"
+    ],
+    "temperature": 0,
+    "max_tokens": 180,
+    "max_duration_seconds": 900
+  },
+  "voice": {
+    "voice_id": "HDc7042zGcc1SdpT2m1U",
+    "name": "Christophe Géradon",
+    "locale": "fr-BE",
+    "model_id": "eleven_v4_turbo",
+    "speed": 0.98,
+    "stability": 0.48,
+    "similarity_boost": 0.78,
+    "expressive_mode": true
+  },
+  "asr": {
+    "provider": "scribe_realtime",
+    "quality": "high",
+    "keywords": [
+      "CHRSM",
+      "Centre Hospitalier Régional Sambre et Meuse",
+      "site Meuse",
+      "Namur",
+      "Avenue Albert Premier",
+      "cent douze",
+      "dix-sept trente-trois",
+      "1733"
+    ]
+  },
+  "turn": {
+    "turn_model": "turn_v3",
+    "turn_eagerness": "normal",
+    "speculative_turn": true,
+    "turn_timeout": 7,
+    "soft_timeout_seconds": -1
+  },
+  "platform": {
+    "private_agent": true,
+    "agent_concurrency_limit": 2,
+    "daily_limit": 120,
+    "record_voice": false,
+    "retention_days": 0,
+    "delete_audio": true,
+    "delete_transcript_and_pii": true,
+    "user_memory": false
+  },
+  "tool_auth": {
+    "header": "x-voicebot-token",
+    "environment_variable_label": "chrsm_demo_tool_token",
+    "secret_name": "chrsm-demo-supabase-tool-token",
+    "local_value_environment_variable": "CHRSM_TOOL_TOKEN"
+  },
+  "tools": [
+    {
+      "name": "CHRSM_search_public_knowledge",
+      "type": "webhook",
+      "url": "https://xqaydfqzhaqksappexdg.supabase.co/functions/v1/chrsm-search-knowledge",
+      "description": "Recherche sémantique dans la base CHRSM de sources publiques contrôlées. À appeler avant toute réponse factuelle sur les horaires, accès, parking, visites, services, secrétariats, documents ou démarches. Ne jamais utiliser pour un dossier patient, un diagnostic ou une urgence vitale.",
+      "response_timeout_secs": 5,
+      "interruption_mode": "disable_during_tool_and_turn",
+      "tool_error_handling_mode": "hide",
+      "request_body_schema": {
+        "type": "object",
+        "required": [
+          "query_fr",
+          "semantic_query_en",
+          "language"
+        ],
+        "properties": {
+          "query_fr": {
+            "type": "string",
+            "description": "Question factuelle courte reformulée en français, sans nom, téléphone, e-mail, adresse personnelle, symptôme ni autre donnée personnelle. Maximum fonctionnel attendu : 350 caractères."
+          },
+          "semantic_query_en": {
+            "type": "string",
+            "description": "Traduction sémantique fidèle en anglais de query_fr, destinée uniquement à l'embedding gte-small. Ne rien ajouter, retirer ou interpréter. Sans aucune donnée personnelle. Maximum fonctionnel attendu : 350 caractères."
+          },
+          "language": {
+            "type": "string",
+            "constant_value": "fr"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "access",
+              "parking",
+              "visits",
+              "appointments",
+              "services",
+              "documents",
+              "admission",
+              "contacts",
+              "emergency",
+              "other"
+            ],
+            "description": "Catégorie la plus proche, uniquement si elle est évidente."
+          }
+        }
+      },
+      "response_filter": {
+        "mode": "allow",
+        "content_type": "application/json",
+        "filters": [
+          "status",
+          "confidence",
+          "answer_context",
+          "passages",
+          "sources",
+          "reason_code"
+        ]
+      }
+    },
+    {
+      "name": "CHRSM_create_callback_request",
+      "type": "webhook",
+      "url": "https://xqaydfqzhaqksappexdg.supabase.co/functions/v1/chrsm-callback",
+      "description": "Enregistre une demande de rappel et met en file un e-mail HTML interne. Le voicebot ne demande ni ne transmet jamais d’adresse e-mail de contact : le téléphone est l’unique canal de rappel. N’appeler qu’après confirmation des champs utiles et consentement explicite, sans réciter de résumé complet. Ne jamais transmettre de donnée clinique. Après un résultat accepted et queued, terminer poliment avec end_call sans demander si la personne a besoin d’autre chose.",
+      "response_timeout_secs": 7,
+      "interruption_mode": "disable_during_tool_and_turn",
+      "tool_error_handling_mode": "hide",
+      "request_body_schema": {
+        "type": "object",
+        "required": [
+          "action",
+          "language",
+          "contact_first_name",
+          "contact_last_name",
+          "callback_phone",
+          "requested_service",
+          "preferred_callback_time",
+          "callback_note",
+          "topic",
+          "consent",
+          "source",
+          "conversation_id"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "constant_value": "request_callback"
+          },
+          "language": {
+            "type": "string",
+            "constant_value": "fr"
+          },
+          "contact_first_name": {
+            "type": "string",
+            "description": "Prénom confirmé, pour cette seule demande de rappel."
+          },
+          "contact_last_name": {
+            "type": "string",
+            "description": "Nom confirmé, pour cette seule demande de rappel."
+          },
+          "callback_phone": {
+            "type": "string",
+            "description": "Numéro confirmé et normalisé en E.164, par exemple +32470123456. Ne jamais inventer ni corriger silencieusement un chiffre."
+          },
+          "requested_service": {
+            "type": "string",
+            "description": "Nom général du service ou secrétariat concerné, sans donnée clinique."
+          },
+          "preferred_callback_time": {
+            "type": "string",
+            "description": "Préférence de rappel dans les mots de l’appelant. Indication non garantie, jamais un rendez-vous."
+          },
+          "callback_note": {
+            "type": "string",
+            "description": "Note factuelle approuvée, maximum fonctionnel attendu : 300 caractères. Aucune donnée clinique, numéro national, date de naissance, numéro de dossier, donnée financière, secret ou transcription."
+          },
+          "topic": {
+            "type": "string",
+            "enum": [
+              "appointment_request",
+              "service_information",
+              "administrative_question",
+              "accessibility",
+              "other"
+            ],
+            "description": "Catégorie administrative minimale de la demande."
+          },
+          "consent": {
+            "type": "boolean",
+            "constant_value": true
+          },
+          "source": {
+            "type": "string",
+            "constant_value": "voicebot_demo"
+          },
+          "conversation_id": {
+            "type": "string",
+            "dynamic_variable": "system__conversation_id"
+          }
+        }
+      },
+      "response_filter": {
+        "mode": "allow",
+        "content_type": "application/json",
+        "filters": [
+          "status",
+          "request_reference",
+          "notification_status",
+          "idempotent_replay",
+          "reason_code"
+        ]
+      }
+    },
+    {
+      "name": "CHRSM_resolve_belgian_address",
+      "type": "webhook",
+      "url": "https://xqaydfqzhaqksappexdg.supabase.co/functions/v1/chrsm-resolve-address",
+      "description": "Vérifie exceptionnellement une adresse prononcée dans le registre belge BeSt, seulement à la demande explicite de l’appelant ou si une démarche autorisée l’exige réellement. Ne jamais demander ou résoudre une adresse pour une information générale, un rendez-vous ou un rappel. Tout résultat doit être reformulé puis confirmé.",
+      "response_timeout_secs": 5,
+      "interruption_mode": "disable_during_tool_and_turn",
+      "tool_error_handling_mode": "hide",
+      "request_body_schema": {
+        "type": "object",
+        "required": [
+          "street"
+        ],
+        "properties": {
+          "postcode": {
+            "type": "string",
+            "description": "Code postal belge à quatre chiffres, uniquement s’il a été donné ou confirmé."
+          },
+          "municipality": {
+            "type": "string",
+            "description": "Commune ou localité telle que prononcée, sans correction inventée."
+          },
+          "street": {
+            "type": "string",
+            "description": "Nom de rue tel qu’il a été compris. Une commune ou un code postal doit aussi être connu avant l’appel."
+          },
+          "house_number": {
+            "type": "string",
+            "description": "Numéro de maison uniquement s’il a été donné."
+          },
+          "box_number": {
+            "type": "string",
+            "description": "Boîte uniquement si elle a été donnée ou si le résultat l’exige."
+          },
+          "language": {
+            "type": "string",
+            "constant_value": "fr"
+          },
+          "max_candidates": {
+            "type": "integer",
+            "constant_value": 3
+          }
+        }
+      },
+      "response_filter": {
+        "mode": "allow",
+        "content_type": "application/json",
+        "filters": [
+          "status",
+          "resolution_status",
+          "candidates",
+          "candidate_count",
+          "dataset_version",
+          "reason_code"
+        ]
+      }
+    }
+  ]
+}
